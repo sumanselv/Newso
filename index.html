@@ -203,6 +203,28 @@
     try { return new URL(u).hostname.replace(/^www\./, ""); } catch (e) { return ""; }
   }
 
+  // Inshorts sends date "28 Oct 2026,Wednesday" and time "09:30 am" in India time.
+  function parseInshortsDate(dateStr, timeStr) {
+    var d = /(\d{1,2})\s+([A-Za-z]{3})[a-z]*\s+(\d{4})/.exec(dateStr || "");
+    if (!d) return "";
+    var months = { jan: 1, feb: 2, mar: 3, apr: 4, may: 5, jun: 6, jul: 7, aug: 8, sep: 9, oct: 10, nov: 11, dec: 12 };
+    var m = months[d[2].toLowerCase()];
+    if (!m) return "";
+    var hh = 0, mm = 0;
+    var t = /(\d{1,2}):(\d{2})\s*([ap]m)?/i.exec(timeStr || "");
+    if (t) {
+      hh = parseInt(t[1], 10);
+      mm = parseInt(t[2], 10);
+      if (t[3]) {
+        var pm = t[3].toLowerCase() === "pm";
+        if (pm && hh < 12) hh += 12;
+        if (!pm && hh === 12) hh = 0;
+      }
+    }
+    function p(n) { return (n < 10 ? "0" : "") + n; }
+    return d[3] + "-" + p(m) + "-" + p(parseInt(d[1], 10)) + "T" + p(hh) + ":" + p(mm) + ":00+05:30";
+  }
+
   function fetchJson(url) {
     var ctrl = new AbortController();
     var timer = setTimeout(function () { ctrl.abort(); }, TIMEOUT_MS);
@@ -321,6 +343,29 @@
             out = out.filter(function (a) { return (a.title || "").toLowerCase().indexOf(needle) !== -1; });
           }
           return out;
+        });
+      }
+    },
+    {
+      name: "Inshorts",
+      load: function (cat, q, page) {
+        var map = {
+          top: "all", world: "world", politics: "politics", business: "business",
+          technology: "technology", science: "science", sports: "sports", entertainment: "entertainment"
+        };
+        if (!map[cat]) return null; // Inshorts has no health section
+        if (page > 0) return Promise.resolve([]); // no paging
+        return fetchJson("https://inshorts.deta.dev/news?category=" + map[cat]).then(function (d) {
+          var needle = q ? q.toLowerCase() : "";
+          return (d.data || [])
+            .filter(function (a) { return !needle || (a.title || "").toLowerCase().indexOf(needle) !== -1; })
+            .map(function (a) {
+              return {
+                title: a.title, url: a.readMoreUrl || a.url, image: a.imageUrl,
+                source: (a.readMoreUrl && hostOf(a.readMoreUrl)) || "Inshorts",
+                date: parseInshortsDate(a.date, a.time)
+              };
+            });
         });
       }
     },

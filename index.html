@@ -451,7 +451,7 @@
   var input = document.getElementById("q");
   var chipsEl = document.getElementById("chips");
 
-  var state = { cat: "top", query: "", page: 0, token: 0, seen: {}, shown: 0 };
+  var state = { cat: "top", query: "", page: 0, token: 0, seen: {}, shown: 0, items: [] };
 
   var PLACEHOLDER = "data:image/svg+xml;utf8," + encodeURIComponent(
     '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 100"><rect width="160" height="100" fill="#eef1f6"/><circle cx="80" cy="50" r="18" fill="none" stroke="#b9c1cf" stroke-width="3"/></svg>'
@@ -580,7 +580,21 @@
       });
     });
     var merged = interleave(lists);
-    merged.forEach(function (a) { grid.appendChild(makeCard(a)); });
+    merged.forEach(function (a) {
+      a._ts = Date.parse(a.date);
+      a._order = state.items.length;
+      state.items.push(a);
+    });
+    // Newest first. Stories without a publish time go after the dated ones.
+    state.items.sort(function (x, y) {
+      var xn = isNaN(x._ts), yn = isNaN(y._ts);
+      if (xn && yn) return x._order - y._order;
+      if (xn) return 1;
+      if (yn) return -1;
+      return (y._ts - x._ts) || (x._order - y._order);
+    });
+    grid.innerHTML = "";
+    state.items.forEach(function (a) { grid.appendChild(makeCard(a)); });
     return merged.length;
   }
 
@@ -599,6 +613,7 @@
     state.page = 0;
     state.seen = {};
     state.shown = 0;
+    state.items = [];
     var token = ++state.token;
     grid.innerHTML = "";
     moreBtn.hidden = true;

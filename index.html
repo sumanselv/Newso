@@ -1,0 +1,680 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Newso</title>
+<style>
+  :root {
+    --bg: #ffffff;
+    --fg: #14181f;
+    --muted: #5d6675;
+    --line: #e4e8ee;
+    --accent: #1f5eff;
+    --card-radius: 12px;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--fg);
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    line-height: 1.5;
+  }
+  .wrap {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 32px 20px 64px;
+  }
+  header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding-bottom: 16px;
+  }
+  h1 { margin: 0; font-size: 1.6rem; letter-spacing: -0.01em; }
+  .sub { margin: 2px 0 0; color: var(--muted); font-size: 0.9rem; }
+  form { display: flex; gap: 8px; flex-wrap: wrap; }
+  input[type="search"] {
+    font: inherit;
+    padding: 9px 12px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    min-width: 220px;
+    background: #fff;
+    color: var(--fg);
+  }
+  button {
+    font: inherit;
+    padding: 9px 16px;
+    border: 0;
+    border-radius: 8px;
+    background: var(--accent);
+    color: #fff;
+    cursor: pointer;
+  }
+  button:disabled { opacity: 0.5; cursor: default; }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding-bottom: 16px;
+    margin-bottom: 16px;
+    border-bottom: 1px solid var(--line);
+  }
+  .chip {
+    padding: 6px 14px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: #fff;
+    color: var(--fg);
+    font-size: 0.9rem;
+  }
+  .chip:hover { border-color: var(--accent); }
+  .chip[aria-pressed="true"] {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+  }
+
+  .source-note {
+    margin: 0 0 20px;
+    font-size: 0.85rem;
+    color: var(--muted);
+  }
+  .source-note strong { color: var(--fg); font-weight: 600; }
+
+  /* Flex card grid */
+  .grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 24px;
+  }
+  .card {
+    flex: 1 1 280px;
+    max-width: 380px;
+    display: flex;
+    flex-direction: column;
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: var(--card-radius);
+    overflow: hidden;
+    text-decoration: none;
+    color: inherit;
+    transition: box-shadow 0.15s ease, transform 0.15s ease;
+  }
+  .card:hover {
+    box-shadow: 0 8px 24px rgba(20, 24, 31, 0.1);
+    transform: translateY(-2px);
+  }
+  .card img {
+    width: 100%;
+    aspect-ratio: 16 / 10;
+    object-fit: cover;
+    display: block;
+    background: #eef1f6;
+  }
+  .card-body {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 14px 16px 16px;
+    flex: 1;
+    min-width: 0;
+  }
+  .card h2 {
+    margin: 0;
+    font-size: 1.05rem;
+    line-height: 1.35;
+    text-wrap: balance;
+    overflow-wrap: anywhere;
+  }
+  .meta {
+    margin-top: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    font-size: 0.8rem;
+    color: var(--muted);
+    min-width: 0;
+  }
+  .meta .src {
+    font-weight: 600;
+    color: var(--fg);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .meta time { display: block; }
+  .meta .rel { color: var(--accent); font-weight: 600; }
+
+  /* Ad space: same footprint as a news card */
+  .card.ad {
+    border-style: dashed;
+    background: #fafbfc;
+    transition: none;
+  }
+  .card.ad:hover { box-shadow: none; transform: none; }
+  .ad-label {
+    padding: 10px 16px 0;
+    font-size: 0.7rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .ad-slot {
+    margin: 10px 16px 16px;
+    flex: 1;
+    min-height: 220px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    color: var(--muted);
+    font-size: 0.85rem;
+    padding: 12px;
+  }
+  .status { color: var(--muted); padding: 24px 0; }
+  .more { display: flex; justify-content: center; margin-top: 32px; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .card { transition: none; }
+    .card:hover { transform: none; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Newso</h1>
+      <p class="sub">Top stories, politics, world and more, all in one place</p>
+    </div>
+    <form id="search-form">
+      <input id="q" type="search" placeholder="Search e.g. election, climate" aria-label="Search articles">
+      <button type="submit">Search</button>
+    </form>
+  </header>
+
+  <nav id="chips" class="chips" aria-label="News categories"></nav>
+  <p id="source-note" class="source-note" hidden></p>
+
+  <main>
+    <div id="status" class="status" hidden></div>
+    <div id="grid" class="grid"></div>
+    <div class="more"><button id="more" hidden>Load more</button></div>
+  </main>
+</div>
+
+<script>
+  var PER = 12;
+  var TIMEOUT_MS = 9000;
+
+  var CATS = [
+    ["top", "Top"],
+    ["world", "World"],
+    ["politics", "Politics"],
+    ["business", "Business"],
+    ["technology", "Technology"],
+    ["science", "Science"],
+    ["health", "Health"],
+    ["sports", "Sports"],
+    ["entertainment", "Entertainment"]
+  ];
+
+  function hostOf(u) {
+    try { return new URL(u).hostname.replace(/^www\./, ""); } catch (e) { return ""; }
+  }
+
+  function fetchJson(url) {
+    var ctrl = new AbortController();
+    var timer = setTimeout(function () { ctrl.abort(); }, TIMEOUT_MS);
+    return fetch(url, { signal: ctrl.signal })
+      .then(function (r) {
+        clearTimeout(timer);
+        if (!r.ok) throw new Error("HTTP " + r.status);
+        return r.json();
+      })
+      .catch(function (e) { clearTimeout(timer); throw e; });
+  }
+
+  var POLITICS_RE = /\b(election|elections|vote|voters|ballot|president|prime minister|parliament|congress|senate|senator|government|minister|party|policy|law|court|supreme court|campaign|democrat|republican|white house|trump|biden|sanctions|diplomat|summit|treaty|legislation|bill)\b/i;
+
+  // GDELT keyword groups per category.
+  var GDELT_TERMS = {
+    top: "(world OR government OR economy OR election OR policy)",
+    world: "(international OR diplomacy OR war OR summit OR global)",
+    politics: "(politics OR election OR parliament OR senate OR president OR minister)",
+    business: "(business OR economy OR markets OR inflation OR trade)",
+    technology: "(technology OR software OR cybersecurity OR artificial intelligence)",
+    science: "(science OR research OR climate OR space OR discovery)",
+    health: "(health OR medicine OR hospital OR vaccine OR disease)",
+    sports: "(sports OR football OR cricket OR tennis OR olympics)",
+    entertainment: "(entertainment OR film OR music OR celebrity OR television)"
+  };
+
+  var GUARDIAN_SECTIONS = {
+    world: "world", politics: "politics", business: "business", technology: "technology",
+    science: "science", sports: "sport", entertainment: "culture"
+  };
+
+  var WIKINEWS_CATS = {
+    top: "Published", world: "Published", politics: "Politics_and_conflicts",
+    business: "Economy_and_business", technology: "Science_and_technology",
+    science: "Science_and_technology", health: "Health", sports: "Sports",
+    entertainment: "Arts_and_entertainment"
+  };
+
+  var OKSURF_SECTIONS = {
+    top: ["US", "World"], world: ["World"], politics: ["US", "World"], business: ["Business"],
+    technology: ["Technology"], science: ["Science"], health: ["Health"],
+    sports: ["Sports"], entertainment: ["Entertainment"]
+  };
+
+  var okSurCache = null;
+
+  /*
+    Each provider has load(category, query, page) that returns a Promise of
+    [{ title, url, image, source, date }], or null when the provider does not
+    cover that category. All providers run in parallel; any that fail are
+    skipped and the rest still fill the page.
+  */
+  var PROVIDERS = [
+    {
+      name: "The Guardian",
+      load: function (cat, q, page) {
+        var url = "https://content.guardianapis.com/search?api-key=test&order-by=newest" +
+          "&show-fields=thumbnail&page-size=" + PER + "&page=" + (page + 1);
+        var query = q;
+        if (GUARDIAN_SECTIONS[cat]) url += "&section=" + GUARDIAN_SECTIONS[cat];
+        if (cat === "health") query = q ? q + " AND health" : "health";
+        if (query) url += "&q=" + encodeURIComponent(query);
+        return fetchJson(url).then(function (d) {
+          var res = (d.response && d.response.results) || [];
+          return res.map(function (a) {
+            return {
+              title: a.webTitle, url: a.webUrl, date: a.webPublicationDate,
+              image: a.fields && a.fields.thumbnail, source: "The Guardian"
+            };
+          });
+        });
+      }
+    },
+    {
+      name: "GDELT",
+      load: function (cat, q, page) {
+        var query = (q ? q : GDELT_TERMS[cat]) + " sourcelang:english";
+        var url = "https://api.gdeltproject.org/api/v2/doc/doc?mode=artlist&format=json&sort=datedesc" +
+          "&timespan=7d&maxrecords=" + Math.min(250, PER * (page + 1)) +
+          "&query=" + encodeURIComponent(query);
+        return fetchJson(url).then(function (d) {
+          return (d.articles || []).map(function (a) {
+            var s = a.seendate || "";
+            var iso = s.length >= 15
+              ? s.slice(0, 4) + "-" + s.slice(4, 6) + "-" + s.slice(6, 8) + "T" +
+                s.slice(9, 11) + ":" + s.slice(11, 13) + ":" + s.slice(13, 15) + "Z"
+              : "";
+            return { title: a.title, url: a.url, image: a.socialimage, source: a.domain, date: iso };
+          });
+        });
+      }
+    },
+    {
+      name: "OK.Surf News",
+      load: function (cat, q, page) {
+        if (page > 0) return Promise.resolve([]); // the feed has no paging
+        if (!okSurCache) {
+          okSurCache = fetchJson("https://ok.surf/api/v1/cors/news-feed").catch(function (e) {
+            okSurCache = null;
+            throw e;
+          });
+        }
+        return okSurCache.then(function (d) {
+          var wanted = OKSURF_SECTIONS[cat].map(function (s) { return s.toLowerCase(); });
+          var out = [];
+          Object.keys(d || {}).forEach(function (key) {
+            if (wanted.indexOf(key.toLowerCase()) === -1 || !Array.isArray(d[key])) return;
+            d[key].forEach(function (a) {
+              out.push({ title: a.title, url: a.link, image: a.og, source: a.source, date: "" });
+            });
+          });
+          if (cat === "politics") out = out.filter(function (a) { return POLITICS_RE.test(a.title || ""); });
+          if (q) {
+            var needle = q.toLowerCase();
+            out = out.filter(function (a) { return (a.title || "").toLowerCase().indexOf(needle) !== -1; });
+          }
+          return out;
+        });
+      }
+    },
+    {
+      name: "Wikinews",
+      load: function (cat, q, page) {
+        var limit = Math.min(50, PER * (page + 1));
+        var url = "https://en.wikinews.org/w/api.php?action=query&format=json&origin=*" +
+          "&prop=pageimages%7Cinfo&inprop=url&piprop=thumbnail&pithumbsize=600";
+        if (q) {
+          url += "&generator=search&gsrnamespace=0&gsrlimit=" + limit + "&gsrsearch=" + encodeURIComponent(q);
+        } else {
+          url += "&generator=categorymembers&gcmnamespace=0&gcmsort=timestamp&gcmdir=desc&gcmlimit=" + limit +
+            "&gcmtitle=" + encodeURIComponent("Category:" + WIKINEWS_CATS[cat]);
+        }
+        return fetchJson(url).then(function (d) {
+          var pages = (d.query && d.query.pages) ? Object.keys(d.query.pages).map(function (k) { return d.query.pages[k]; }) : [];
+          pages.sort(function (a, b) { return (a.index || 0) - (b.index || 0); });
+          return pages.map(function (p) {
+            return {
+              title: p.title, url: p.fullurl, source: "Wikinews", date: p.touched,
+              image: p.thumbnail && p.thumbnail.source
+            };
+          });
+        });
+      }
+    },
+    {
+      name: "Spaceflight News",
+      load: function (cat, q, page) {
+        if (cat !== "science") return null;
+        var url = "https://api.spaceflightnewsapi.net/v4/articles/?limit=" + PER + "&offset=" + (page * PER) +
+          (q ? "&search=" + encodeURIComponent(q) : "");
+        return fetchJson(url).then(function (d) {
+          return (d.results || []).map(function (a) {
+            return { title: a.title, url: a.url, image: a.image_url, source: a.news_site, date: a.published_at };
+          });
+        });
+      }
+    },
+    {
+      name: "DEV Community",
+      load: function (cat, q, page) {
+        if (cat !== "technology") return null;
+        // Forem filters by tag, so the first word of a search becomes the tag.
+        var tag = q ? q.toLowerCase().split(/\s+/)[0].replace(/[^a-z0-9]/g, "") : "";
+        var url = "https://dev.to/api/articles?per_page=" + PER + "&page=" + (page + 1) +
+          (tag ? "&tag=" + encodeURIComponent(tag) : "&top=7");
+        return fetchJson(url).then(function (d) {
+          return (Array.isArray(d) ? d : []).map(function (a) {
+            return {
+              title: a.title, url: a.url, image: a.cover_image || a.social_image,
+              source: (a.user && a.user.name) || "DEV", date: a.published_at
+            };
+          });
+        });
+      }
+    },
+    {
+      name: "Hacker News",
+      load: function (cat, q, page) {
+        if (cat !== "technology") return null;
+        var url = "https://hn.algolia.com/api/v1/search?hitsPerPage=" + PER + "&page=" + page +
+          (q ? "&tags=story&query=" + encodeURIComponent(q) : "&tags=front_page");
+        return fetchJson(url).then(function (d) {
+          return (d.hits || []).map(function (h) {
+            return {
+              title: h.title,
+              url: h.url || ("https://news.ycombinator.com/item?id=" + h.objectID),
+              image: "", source: h.url ? hostOf(h.url) : "news.ycombinator.com", date: h.created_at
+            };
+          });
+        });
+      }
+    }
+  ];
+
+  var grid = document.getElementById("grid");
+  var statusEl = document.getElementById("status");
+  var noteEl = document.getElementById("source-note");
+  var moreBtn = document.getElementById("more");
+  var form = document.getElementById("search-form");
+  var input = document.getElementById("q");
+  var chipsEl = document.getElementById("chips");
+
+  var state = { cat: "top", query: "", page: 0, token: 0, seen: {}, shown: 0 };
+
+  var PLACEHOLDER = "data:image/svg+xml;utf8," + encodeURIComponent(
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 100"><rect width="160" height="100" fill="#eef1f6"/><circle cx="80" cy="50" r="18" fill="none" stroke="#b9c1cf" stroke-width="3"/></svg>'
+  );
+
+  function setStatus(msg) {
+    statusEl.textContent = msg || "";
+    statusEl.hidden = !msg;
+  }
+
+  // API names are not shown to readers. Failed sources are skipped silently.
+  function setNote() {
+    noteEl.textContent = "";
+    noteEl.hidden = true;
+  }
+
+  // Returns { iso, full, rel } for a timestamp, or null when it is missing.
+  function fmtStamp(iso) {
+    if (!iso) return null;
+    var d = new Date(iso);
+    if (isNaN(d.getTime())) return null;
+    var full = d.toLocaleString(undefined, {
+      day: "numeric", month: "short", year: "numeric", hour: "numeric", minute: "2-digit"
+    });
+    var mins = Math.floor((Date.now() - d.getTime()) / 60000);
+    var rel = "";
+    if (mins < 1) rel = "Just now";
+    else if (mins < 60) rel = mins + " min ago";
+    else if (mins < 60 * 24) rel = Math.floor(mins / 60) + " hr ago";
+    else if (mins < 60 * 24 * 7) rel = Math.floor(mins / (60 * 24)) + " d ago";
+    return { iso: d.toISOString(), full: full, rel: rel };
+  }
+
+  // Ad space: show one placeholder after every AD_EVERY news cards.
+  // To run real ads, put your ad network's code inside fillAd(slot).
+  var AD_EVERY = 6;
+
+  function fillAd(slot) {
+    slot.textContent = "Ad space";
+  }
+
+  function makeAd() {
+    var box = document.createElement("aside");
+    box.className = "card ad";
+    box.setAttribute("aria-label", "Advertisement");
+    var label = document.createElement("div");
+    label.className = "ad-label";
+    label.textContent = "Advertisement";
+    var slot = document.createElement("div");
+    slot.className = "ad-slot";
+    fillAd(slot);
+    box.appendChild(label);
+    box.appendChild(slot);
+    return box;
+  }
+
+  function makeCard(a) {
+    var link = document.createElement("a");
+    link.className = "card";
+    link.href = a.url;
+    link.target = "_blank";
+    link.rel = "noopener noreferrer";
+
+    var img = document.createElement("img");
+    img.src = a.image ? a.image.replace(/^http:\/\//i, "https://") : PLACEHOLDER;
+    img.alt = "";
+    img.loading = "lazy";
+    img.referrerPolicy = "no-referrer";
+    img.onerror = function () { img.onerror = null; img.src = PLACEHOLDER; };
+
+    var body = document.createElement("div");
+    body.className = "card-body";
+
+    var title = document.createElement("h2");
+    title.textContent = a.title;
+
+    var meta = document.createElement("div");
+    meta.className = "meta";
+    var src = document.createElement("span");
+    src.className = "src";
+    src.textContent = a.source || "";
+    meta.appendChild(src);
+    var stamp = fmtStamp(a.date);
+    if (stamp) {
+      var t = document.createElement("time");
+      t.setAttribute("datetime", stamp.iso);
+      t.title = stamp.full;
+      t.textContent = stamp.full;
+      if (stamp.rel) {
+        var rel = document.createElement("span");
+        rel.className = "rel";
+        rel.textContent = " · " + stamp.rel;
+        t.appendChild(rel);
+      }
+      meta.appendChild(t);
+    }
+
+    body.appendChild(title);
+    body.appendChild(meta);
+    link.appendChild(img);
+    link.appendChild(body);
+    return link;
+  }
+
+  function normTitle(t) {
+    return (t || "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+  }
+
+  // Interleave providers so one source does not fill the whole page.
+  function interleave(lists) {
+    var out = [];
+    var i = 0, added = true;
+    while (added) {
+      added = false;
+      for (var k = 0; k < lists.length; k++) {
+        if (i < lists[k].length) { out.push(lists[k][i]); added = true; }
+      }
+      i++;
+    }
+    return out;
+  }
+
+  // Run every provider that covers this category, in parallel.
+  function runAll(cat, q, page) {
+    var jobs = PROVIDERS.map(function (p) {
+      var promise;
+      try { promise = p.load(cat, q, page); } catch (e) { promise = Promise.reject(e); }
+      if (!promise) return Promise.resolve({ name: p.name, skipped: true, items: [] });
+      return promise
+        .then(function (items) {
+          items = (items || []).filter(function (a) { return a && a.title && a.url; });
+          return { name: p.name, ok: true, items: items };
+        })
+        .catch(function () { return { name: p.name, ok: false, items: [] }; });
+    });
+    return Promise.all(jobs);
+  }
+
+  function appendUnseen(results) {
+    var lists = results.map(function (r) {
+      return r.items.filter(function (a) {
+        var key = a.url;
+        var tkey = "t:" + normTitle(a.title);
+        if (state.seen[key] || state.seen[tkey]) return false;
+        state.seen[key] = true;
+        state.seen[tkey] = true;
+        return true;
+      });
+    });
+    var merged = interleave(lists);
+    merged.forEach(function (a) {
+      grid.appendChild(makeCard(a));
+      state.shown++;
+      if (state.shown % AD_EVERY === 0) grid.appendChild(makeAd());
+    });
+    return merged.length;
+  }
+
+  function summarize(results) {
+    var okNames = [], failed = [];
+    results.forEach(function (r) {
+      if (r.skipped) return;
+      if (r.ok && r.items.length) okNames.push(r.name);
+      else if (!r.ok) failed.push(r.name);
+    });
+    return { okNames: okNames, failed: failed };
+  }
+
+  function start() {
+    state.query = input.value.trim();
+    state.page = 0;
+    state.seen = {};
+    state.shown = 0;
+    var token = ++state.token;
+    grid.innerHTML = "";
+    moreBtn.hidden = true;
+    setNote([], []);
+    setStatus("Loading articles...");
+
+    runAll(state.cat, state.query, 0).then(function (results) {
+      if (token !== state.token) return; // a newer request replaced this one
+      var count = appendUnseen(results);
+      var s = summarize(results);
+      setNote(s.okNames, s.failed);
+      if (count === 0) {
+        var attempted = results.filter(function (r) { return !r.skipped; });
+        var allFailed = attempted.every(function (r) { return !r.ok; });
+        setStatus(allFailed
+          ? "Could not reach any news source. Check your connection and try again."
+          : "No articles found. Try another search or category.");
+        return;
+      }
+      setStatus("");
+      moreBtn.hidden = false;
+    });
+  }
+
+  function loadMore() {
+    var token = state.token;
+    moreBtn.disabled = true;
+    var nextPage = state.page + 1;
+    runAll(state.cat, state.query, nextPage).then(function (results) {
+      if (token !== state.token) return;
+      var count = appendUnseen(results);
+      state.page = nextPage;
+      moreBtn.disabled = false;
+      if (count === 0) {
+        moreBtn.hidden = true;
+        setStatus("No more articles to show.");
+      } else {
+        setStatus("");
+      }
+    });
+  }
+
+  function buildChips() {
+    CATS.forEach(function (c) {
+      var b = document.createElement("button");
+      b.type = "button";
+      b.className = "chip";
+      b.textContent = c[1];
+      b.setAttribute("data-cat", c[0]);
+      b.setAttribute("aria-pressed", c[0] === state.cat ? "true" : "false");
+      b.addEventListener("click", function () {
+        state.cat = c[0];
+        Array.prototype.forEach.call(chipsEl.children, function (el) {
+          el.setAttribute("aria-pressed", el.getAttribute("data-cat") === state.cat ? "true" : "false");
+        });
+        start();
+      });
+      chipsEl.appendChild(b);
+    });
+  }
+
+  form.addEventListener("submit", function (e) { e.preventDefault(); start(); });
+  moreBtn.addEventListener("click", loadMore);
+
+  buildChips();
+  start();
+</script>
+</body>
+</html>

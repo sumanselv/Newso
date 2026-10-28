@@ -151,35 +151,6 @@
   }
   .meta time { display: block; }
   .meta .rel { color: var(--accent); font-weight: 600; }
-
-  /* Ad space: same footprint as a news card */
-  .card.ad {
-    border-style: dashed;
-    background: #fafbfc;
-    transition: none;
-  }
-  .card.ad:hover { box-shadow: none; transform: none; }
-  .ad-label {
-    padding: 10px 16px 0;
-    font-size: 0.7rem;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: var(--muted);
-  }
-  .ad-slot {
-    margin: 10px 16px 16px;
-    flex: 1;
-    min-height: 220px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
-    border: 1px dashed var(--line);
-    border-radius: 8px;
-    color: var(--muted);
-    font-size: 0.85rem;
-    padding: 12px;
-  }
   .status { color: var(--muted); padding: 24px 0; }
   .more { display: flex; justify-content: center; margin-top: 32px; }
 
@@ -469,28 +440,6 @@
     return { iso: d.toISOString(), full: full, rel: rel };
   }
 
-  // Ad space: show one placeholder after every AD_EVERY news cards.
-  // To run real ads, put your ad network's code inside fillAd(slot).
-  var AD_EVERY = 6;
-
-  function fillAd(slot) {
-    slot.textContent = "Ad space";
-  }
-
-  function makeAd() {
-    var box = document.createElement("aside");
-    box.className = "card ad";
-    box.setAttribute("aria-label", "Advertisement");
-    var label = document.createElement("div");
-    label.className = "ad-label";
-    label.textContent = "Advertisement";
-    var slot = document.createElement("div");
-    slot.className = "ad-slot";
-    fillAd(slot);
-    box.appendChild(label);
-    box.appendChild(slot);
-    return box;
-  }
 
   function makeCard(a) {
     var link = document.createElement("a");
@@ -586,11 +535,7 @@
       });
     });
     var merged = interleave(lists);
-    merged.forEach(function (a) {
-      grid.appendChild(makeCard(a));
-      state.shown++;
-      if (state.shown % AD_EVERY === 0) grid.appendChild(makeAd());
-    });
+    merged.forEach(function (a) { grid.appendChild(makeCard(a)); });
     return merged.length;
   }
 
